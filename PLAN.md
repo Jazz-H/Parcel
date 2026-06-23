@@ -1,236 +1,131 @@
-# Parcel — Implementation Plan
+# Parcel — Implementation Plan (updated)
 
-> Step-by-step build plan for **Parcel**, an end-to-end real-estate market-analytics
-> pipeline for a buy-and-hold investor. Turns official public housing data into a single
-> view of *where to buy and whether now is the time*.
+> End-to-end real-estate market-analytics pipeline for a buy-and-hold investor: official
+> public housing data → Python ETL → SQLite star schema → Power BI → Publish to web.
 >
-> Derived from `ParcelBuildBrief v2`. This is the working plan; check off phases as they ship.
+> **Updated** to reflect the built pipeline and the network allowlist now including the rent
+> sources. For the original phased plan see git history; this is the current source of truth.
 
 ---
 
 ## Locked decisions
 
-| Decision | Choice | Implication |
-|---|---|---|
-| **Name** | **Parcel** | — |
-| **Medium** | **Power BI** | Claude builds the full Python pipeline + a `MEASURES.md` spec. You assemble the `.pbix` in the Power BI GUI and **Publish to web**. One manual GUI step. |
-| **Geographic scope** | **Focused markets** | Charlotte (anchor) + a configurable target list of Sun-Belt buy-and-hold metros. Tighter narrative, smaller data, faster to ship. |
-| **Deal Screener (View 4)** | **Stretch (post-MVP)** | Keeps MVP scrape-free and API-key-free. Added later via RentCast/SimplyRETS. |
+| Decision | Choice |
+|---|---|
+| **Name** | Parcel |
+| **Medium** | Power BI (Claude builds pipeline + `MEASURES.md`; you assemble the `.pbix` + Publish to web) |
+| **Geographic scope** | Focused markets — Charlotte (anchor) + Sun-Belt targets |
+| **Deal Screener (View 4)** | Stretch (post-MVP) |
+| **Rent data** | **Broaden network allowlist** to reach Zillow (+ Census) — *in progress* |
 
-**Target markets (initial, configurable in `config.yml`):** Charlotte NC (anchor), Raleigh NC,
-Atlanta GA, Nashville TN, Tampa FL, Dallas TX, Columbus OH, Indianapolis IN. Easy to add/remove.
+**Markets (CBSA, configurable in `config.yml`):** Charlotte 16740 (anchor), Raleigh 39580,
+Atlanta 12060, Nashville 34980, Tampa 45300, Dallas **19124**, Columbus 18140, Indianapolis 26900.
+
+---
+
+## Network allowlist (the unblock)
+
+Rent metrics were blocked because this environment's allowlist excluded the rent sources.
+**Resolution:** set the environment **Network access → Custom** (web UI at claude.ai/code →
+cloud icon → edit environment) with these **Allowed domains**, "include default package
+managers" checked:
+
+```
+files.zillowstatic.com     # Zillow ZHVI (values) + ZORI (rents) — required for rent metrics
+api.census.gov             # Census ACS enrichment — stretch
+www2.census.gov            # Census bulk — stretch
+```
+
+> Changing allowed hosts rebuilds the environment cache; **start a fresh session** for it to
+> take effect, then run `make refresh`. Mobile is monitor-only — make this edit on the web.
+
+---
+
+## Status at a glance
+
+| Phase | What | Status |
+|---|---|---|
+| 0 | Data spike — sources, fields, CBSA join key | ✅ done (`docs/data-spike.md`) |
+| 1 | Repo scaffold (config, requirements, Makefile, .env) | ✅ done |
+| 2 | Ingest — Redfin (live) + Zillow module (ready) | ✅ done |
+| 3 | Transform — clean, geo-normalize, derive metrics | ✅ done |
+| 4 | Storage — SQLite star schema + loader | ✅ done |
+| 5 | Orchestration — one-command refresh + sample | ✅ done |
+| 6 | Power BI spec — `MEASURES.md` | ✅ done |
+| 8 | Portfolio entry copy | ✅ done (`docs/portfolio-entry.md`) |
+| S1 | GitHub Actions scheduled refresh | ✅ done |
+| — | **Rent metrics live run** | ⏳ pending fresh session on updated allowlist |
+| 7 | **Power BI report assembly + Publish to web** | ◻️ your GUI step |
+| 8b | Fill portfolio `TODO`s (live link, screenshots) | ◻️ after Publish |
+| S2 | Census enrichment (income/vacancy) | ◻️ stretch |
+| S3 | Deal Screener (View 4) | ◻️ stretch |
+
+**Current database:** price-side, 8 metros, 2012-01 → 2026-05, ~1,358 region-months. Rent
+columns present but null until the Zillow run.
+
+---
+
+## Remaining steps (in order)
+
+### Step A — Activate rent metrics  *(Claude, once the new session is on the updated allowlist)*
+1. `make refresh` (or `python -m parcel.run`) — now fetches Zillow ZHVI + ZORI and populates
+   `median_rent`, `rent_to_price`, `gross_rent_multiplier`, `est_cap_rate`.
+2. Sanity-check rent values per metro; confirm CBSA↔Zillow name mapping resolved all 8 markets.
+3. `make sample` — regenerate `data/sample/parcel_sample.sqlite` + CSV exports.
+4. Bump `meta.data_sources` to 2 (Redfin + Zillow) automatically; verify in the DB.
+5. Commit + push the refreshed sample.
+
+### Step B — Assemble the Power BI report  *(You — GUI)*
+Follow `powerbi/MEASURES.md` exactly:
+1. Connect to `db/parcel.sqlite` (ODBC) or the committed sample; load all 4 tables.
+2. Set the star relationships; mark `dim_date` as the date table.
+3. Create the what-if parameters and paste the DAX measures.
+4. Build **View 1 Market Ranking**, **View 2 Market Detail**, **View 3 KPI header**.
+5. **Publish to web** → copy the public link.
+6. Capture 3–5 screenshots (ranking + map, detail trends, what-if panel) + a cover image.
+
+### Step C — Finalize portfolio entry  *(Claude)*
+1. Fill the `TODO`s in `docs/portfolio-entry.md`: `live` link, `image`, `images`.
+2. Optionally swap one metric card for a headline finding (e.g. top metro by rent-to-price).
+3. If you add the portfolio-site repo to the session, wire the entry into `Portfolio.jsx`
+   and retire the *Real-time Stock Market Dashboard* entry (fold in the *Web Scraper*).
+
+### Step D — README polish  *(Claude)*
+1. Embed the live link + screenshots in `README.md`; flip the status checklist to ✅.
+
+---
+
+## Stretch (after MVP ships)
+
+- **S2 — Census enrichment:** `ingest/census.py` → populate `dim_region` population /
+  median household income / vacancy (allowlist already includes Census).
+- **S3 — Deal Screener (View 4):** `fact_listing` via RentCast/SimplyRETS free tier; cap rate /
+  cash-on-cash / deal score with the live what-if panel.
+- **S4 — Threshold alerts:** flag when a market crosses a market-temperature score.
+
+---
+
+## Risks & mitigations (current)
+
+| Risk | Mitigation |
+|---|---|
+| Zillow RegionName ↔ CBSA mapping misses a metro | Step A.2 verifies all 8; fallback name-match in `zillow.py`; adjust `config.yml` names if needed. |
+| Allowlist change not picked up by running session | Start a fresh session after editing the environment (noted above). |
+| Power BI SQLite/ODBC friction | `MEASURES.md` documents the driver; CSV fallback (`data/sample/*.csv`) provided. |
+| Scope creep into live listings | Hard rule: any view not answering decision 1/2/3 is out; deal screener stays stretch. |
 
 ---
 
 ## Definition of done (MVP)
 
-- [x] Redfin ingested for the target markets → SQLite star schema *(Zillow code ready; network-gated)*
-- [x] Core investor metrics derived in ETL; remaining metrics specced as DAX in `MEASURES.md`
-- [x] One reproducible end-to-end run (`make refresh` or `python -m parcel.run`) with a `last_updated` stamp
-- [x] Committed sample data so the repo runs without network access
-- [x] README with architecture diagram + run instructions
-- [x] `MEASURES.md` complete enough that the Power BI report can be assembled without guesswork
-- [ ] Power BI report assembled (by you) covering Views 1–2 + KPI header, Published to web
-- [ ] Portfolio entry copy (challenge / approach / outcome + metric cards) drafted *(can draft now)*
+- [x] Redfin ingested → SQLite star schema; reproducible one-command refresh
+- [x] Core metrics in ETL; remaining specced as DAX in `MEASURES.md`
+- [x] Committed sample so the repo runs offline
+- [x] README with architecture diagram
+- [x] Portfolio entry copy drafted
+- [ ] **Rent metrics populated** (Step A — pending fresh session on updated allowlist)
+- [ ] **Power BI report assembled + Published to web** (Step B — your GUI step)
+- [ ] Portfolio `TODO`s filled with live link + screenshots (Step C)
 
-> **Outstanding for full MVP:** (1) rent metrics need the network allowlist to include
-> `files.zillowstatic.com`, then re-run `make refresh`; (2) Power BI assembly is your GUI step.
-
----
-
-## Phase 0 — Data spike & decisions (½ day)
-
-*Goal: confirm the real-world data before writing any schema. The brief's "first move."*
-
-1. Download **one Redfin Data Center** market CSV/TSV (city or metro level) and inspect columns,
-   grain, update cadence, and how regions are keyed.
-2. Download **one Zillow Research** file each for **ZHVI** (home values) and **ZORI** (rents);
-   inspect region keys and the wide (date-as-columns) layout that will need melting.
-3. Confirm the join key strategy between Redfin regions and Zillow regions (metro name + state,
-   or CBSA/RegionID crosswalk). **This is the riskiest part of the project** — document it.
-4. Write findings to `docs/data-spike.md`: available fields, grains, gotchas, chosen join key.
-
-**Exit criteria:** we know exactly which columns feed each fact/dim and how regions reconcile.
-
----
-
-## Phase 1 — Repo scaffold (½ day)
-
-Set up the structure from brief §12, adapted:
-
-```
-parcel/
-  parcel/                 # python package
-    ingest/               # redfin.py, zillow.py, census.py (stub), base.py
-    transform/            # clean.py, geo.py (ZIP<->metro), metrics.py
-    db/                   # schema.sql, load.py
-    config.py             # loads config.yml (target markets, paths, source URLs)
-    run.py                # orchestrates full refresh
-  data/
-    raw/                  # downloaded source files (gitignored)
-    sample/               # small committed sample for reproducibility
-  db/
-    parcel.sqlite         # built artifact (gitignored; sample committed)
-  powerbi/
-    MEASURES.md           # every DAX measure + relationships + view wireframes
-  docs/
-    data-spike.md
-    architecture.png      # (or .drawio / mermaid in README)
-  .github/workflows/
-    refresh.yml           # scheduled refresh (stretch)
-  config.yml              # target markets + source config
-  requirements.txt
-  .env.example
-  .gitignore
-  README.md
-  PLAN.md                 # this file
-```
-
-Tasks:
-- [ ] `requirements.txt` — `requests`, `pandas`, `pyyaml`, `python-dotenv` (+ `duckdb` optional)
-- [ ] `.gitignore` — `data/raw/`, `*.sqlite` (except sample), `.env`, `__pycache__`
-- [ ] `.env.example` — placeholders for future API keys (Census, RentCast) — none required for MVP
-- [ ] `config.yml` — target market list, source URLs, output paths
-- [ ] Package skeleton with empty modules + docstrings
-
----
-
-## Phase 2 — Ingest layer (1 day)
-
-*Pure download + light validation. No business logic here.*
-
-- [ ] `ingest/base.py` — shared download helper (requests, retries, on-disk caching to `data/raw/`,
-      polite headers). Records a per-source `fetched_at` timestamp.
-- [ ] `ingest/redfin.py` — pull the relevant Redfin market file(s), filter to target markets early.
-- [ ] `ingest/zillow.py` — pull ZHVI + ZORI; filter to target markets.
-- [ ] Each ingest module returns a tidy raw DataFrame and writes a cached copy.
-- [ ] Generate the committed `data/sample/` slice (a few markets, recent dates) from real pulls.
-
-**Exit criteria:** `python -m parcel.ingest.redfin` and `...zillow` produce cached raw files for the targets.
-
----
-
-## Phase 3 — Transform layer (1–1.5 days)
-
-*Clean → normalize → derive. This is the ETL the BA story rests on.*
-
-- [ ] `transform/clean.py` — type-cast, parse dates, dedupe, handle nulls, standardize column names.
-- [ ] `transform/geo.py` — geo-normalize: reconcile Redfin and Zillow region keys to a single
-      `region_id`; build the `dim_region` crosswalk (metro, state; ZIP where available).
-- [ ] Melt Zillow wide format (date-as-columns) into long `region_id × date × value`.
-- [ ] `transform/metrics.py` — derive ETL-side metrics that aren't time-intelligence:
-  - rent-to-price (1% rule) = monthly_rent / sale_price
-  - gross rent multiplier = sale_price / annual_rent
-  - estimated cap rate = (annual_rent × (1 − expense_ratio)) / sale_price  *(default expense_ratio 0.45)*
-  - *(YoY appreciation, market-temperature z-score blend, and what-if-driven measures are left for DAX — see MEASURES.md)*
-- [ ] Produce final tidy frames matching the star schema below.
-
-**Exit criteria:** in-memory frames for `fact_market`, `dim_region`, `dim_date` validate against expectations.
-
----
-
-## Phase 4 — Storage / star schema (½ day)
-
-Star schema (brief §7):
-
-- **`fact_market`** — region_id, date, median_sale_price, price_per_sqft, median_rent,
-  days_on_market, inventory, months_of_supply, price_cut_share, list_to_sale_ratio,
-  rent_to_price, gross_rent_multiplier, est_cap_rate
-- **`dim_region`** — region_id, zip, city, metro, state, lat, long, population,
-  median_household_income, vacancy_rate *(income/vacancy stretch via Census)*
-- **`dim_date`** — full date table for time-intelligence
-- **`fact_listing`** *(stretch / deal screener)* — listing_id, region_id, date_pulled, price,
-  beds, baths, sqft, est_rent, status
-
-Tasks:
-- [ ] `db/schema.sql` — DDL for tables + indexes + a `meta` table holding `last_updated`.
-- [ ] `db/load.py` — create schema, truncate/upsert, load frames, stamp `last_updated`. Re-runnable.
-- [ ] Generate `dim_date` programmatically across the data's date range.
-- [ ] Commit a built **sample `parcel.sqlite`** (small) so the report can be wired without a full pull.
-
-**Exit criteria:** `sqlite3 db/parcel.sqlite` shows populated tables; re-running `load.py` is idempotent.
-
----
-
-## Phase 5 — Orchestration & reproducibility (½ day)
-
-- [ ] `parcel/run.py` — single entry point: ingest → transform → load → stamp. Logs each stage.
-- [ ] `Makefile` (or documented commands): `make refresh`, `make sample`, `make clean`.
-- [ ] Verify a cold run from a clean checkout using committed sample produces a working DB.
-
-**Exit criteria:** one command rebuilds the database end-to-end and updates `last_updated`.
-
----
-
-## Phase 6 — Power BI spec: `MEASURES.md` (1 day) — Claude
-
-*The bridge to the GUI step. Must be complete enough to build the report without guessing.*
-
-- [ ] **Table relationships** — `fact_market[region_id] → dim_region[region_id]`,
-      `fact_market[date] → dim_date[date]` (single-direction, star).
-- [ ] **Power Query notes** — connect to `parcel.sqlite`, expected column types, any folding caveats.
-- [ ] **DAX measures, fully written out:**
-  - YoY appreciation = median price vs 12 months prior (`CALCULATE` + `DATEADD`)
-  - Market temperature = z-score blend of months-of-supply + price-cut share + list-to-sale ratio
-  - rent-to-price, GRM, cap rate (confirm whether computed in ETL or re-derived in DAX)
-  - Cash-on-cash with **what-if parameters** (down %, rate, term, expense ratio)
-  - KPI measures: last-updated, # regions, date range, # sources
-- [ ] **View-by-view wireframes** (layout, visuals, fields, slicers) for Views 1–3.
-
----
-
-## Phase 7 — Build the report (GUI) — YOU
-
-1. Open Power BI Desktop → connect to `db/parcel.sqlite` (via ODBC/SQLite connector or import).
-2. Apply Power Query steps and set relationships per `MEASURES.md`.
-3. Add measures (copy/paste DAX from `MEASURES.md`).
-4. Build the three MVP views:
-   - **View 1 — Market Ranking:** choropleth + sortable table by rent-to-price, YoY appreciation,
-     market temperature. *"Where should I look?"*
-   - **View 2 — Market Detail:** drill into one region — price & rent trends, DOM, inventory,
-     months-of-supply over time. *"Is now the time?"*
-   - **View 3 — KPI header:** last-updated, # regions, date range, # sources.
-5. **Publish to web** → capture the live link.
-6. Capture 3–5 gallery screenshots + a cover image.
-
----
-
-## Phase 8 — Docs & portfolio wiring (½ day) — Claude
-
-- [ ] README: one-liner, architecture diagram (mermaid or `architecture.png`), data-source
-      credits + "no scraping" note, run instructions, screenshots, live link.
-- [ ] Portfolio entry copy: challenge / approach / outcome study + quantified metric cards
-      (# markets, # metrics, date range, refresh cadence).
-- [ ] Wire deliverables into the portfolio site (`components/Portfolio.jsx`): `live`, `code`,
-      `image`, `images`, study, metric cards. Retire the Stock Dashboard entry; fold in the Web Scraper.
-
----
-
-## Stretch phases (after MVP ships)
-
-- **S1 — GitHub Actions refresh** (`.github/workflows/refresh.yml`): scheduled run of the ETL,
-  commits refreshed sample DB, updates `last_updated`. Makes "refreshable" real.
-- **S2 — Census enrichment**: `ingest/census.py` for median household income + vacancy into `dim_region`.
-- **S3 — Deal Screener (View 4)**: `fact_listing` via RentCast/SimplyRETS free tier; cap rate /
-  CoC / deal score + live what-if panel. Requires an API key (`.env`).
-- **S4 — Threshold alerts**: flag when a market crosses a market-temperature/score threshold.
-
----
-
-## Risks & mitigations
-
-| Risk | Mitigation |
-|---|---|
-| Redfin↔Zillow region key mismatch | Resolve in Phase 0 spike; build explicit crosswalk in `dim_region`. |
-| Source file URLs/schema change | Cache raw pulls; pin column mapping in config; committed sample keeps repo runnable. |
-| Power BI SQLite connectivity friction | Document ODBC driver setup in README; fall back to CSV export from SQLite if needed. |
-| Scope creep into "live listings" | Hard rule: any view that doesn't answer decision 1/2/3 is out. Deal screener stays stretch. |
-
----
-
-## Suggested sequencing
-
-Phase 0 → 1 → 2 → 3 → 4 → 5 → 6 (Claude can do 0–6 and 8) → **7 (you, GUI)** → 8 → stretch.
-
-**Next action:** start **Phase 0 — the data spike**: download one Redfin CSV and one Zillow CSV,
-confirm fields, and lock the region join key. Say the word and I'll begin.
+**Next action:** start a fresh session on the updated environment, then tell me
+**"network's open"** — I'll run Step A and populate the rent metrics.
