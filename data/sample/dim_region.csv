@@ -1,0 +1,9 @@
+region_id,metro,city,state,is_anchor,population,median_household_income,vacancy_rate
+16740,"Charlotte, NC",Charlotte,NC,1,,,
+39580,"Raleigh, NC",Raleigh,NC,0,,,
+12060,"Atlanta, GA",Atlanta,GA,0,,,
+34980,"Nashville, TN",Nashville,TN,0,,,
+45300,"Tampa, FL",Tampa,FL,0,,,
+19124,"Dallas, TX",Dallas,TX,0,,,
+18140,"Columbus, OH",Columbus,OH,0,,,
+26900,"Indianapolis, IN",Indianapolis,IN,0,,,

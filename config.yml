@@ -1,0 +1,35 @@
+# Parcel configuration — focused-markets scope (Charlotte anchor + Sun-Belt targets).
+# Region identity is the CBSA code (shared by Redfin and Realtor.com; Zillow has a crosswalk).
+
+# Target metros. region_id = CBSA code. `name` is matched (case-insensitive substring)
+# against Redfin's REGION / Zillow's RegionName as a fallback when CBSA isn't present.
+markets:
+  - { region_id: "16740", name: "Charlotte, NC",   state: "NC", anchor: true }
+  - { region_id: "39580", name: "Raleigh, NC",     state: "NC" }
+  - { region_id: "12060", name: "Atlanta, GA",     state: "GA" }
+  - { region_id: "34980", name: "Nashville, TN",   state: "TN" }
+  - { region_id: "45300", name: "Tampa, FL",       state: "FL" }
+  - { region_id: "19124", name: "Dallas, TX",      state: "TX" }  # Redfin uses the Dallas-Plano-Irving metro division code
+  - { region_id: "18140", name: "Columbus, OH",    state: "OH" }
+  - { region_id: "26900", name: "Indianapolis, IN", state: "IN" }
+
+sources:
+  redfin:
+    metro_url: "https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_market_tracker/redfin_metro_market_tracker.tsv000.gz"
+    property_type: "All Residential"
+  zillow:
+    # ZHVI = Zillow Home Value Index (home values); ZORI = Zillow Observed Rent Index (rents).
+    # Requires the network allowlist to include files.zillowstatic.com.
+    zhvi_metro_url: "https://files.zillowstatic.com/research/public_csvs/zhvi/Metro_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"
+    zori_metro_url: "https://files.zillowstatic.com/research/public_csvs/zori/Metro_zori_uc_sfrcondomfr_sm_month.csv"
+  realtor:
+    metro_url: "https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Core_Metrics_Metro.csv"
+
+paths:
+  raw_dir: "data/raw"
+  sample_dir: "data/sample"
+  db_path: "db/parcel.sqlite"
+
+# Default assumption for estimated cap rate (expense ratio). Overridable in Power BI what-if.
+metrics:
+  expense_ratio: 0.45
