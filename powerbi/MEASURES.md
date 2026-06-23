@@ -4,6 +4,9 @@ Everything needed to assemble the report from `db/parcel.sqlite` (or
 `data/sample/parcel_sample.sqlite`): data connection, relationships, DAX measures,
 what-if parameters, and a view-by-view wireframe. Copy the DAX verbatim.
 
+> **Companions:** import **`parcel-theme.json`** (*View → Themes → Browse*) for the palette
+> and typography, and follow **`LAYOUT.md`** for exact per-visual pixel coordinates.
+
 ---
 
 ## 1. Connect to the data
