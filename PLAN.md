@@ -24,14 +24,17 @@ Atlanta GA, Nashville TN, Tampa FL, Dallas TX, Columbus OH, Indianapolis IN. Eas
 
 ## Definition of done (MVP)
 
-- [ ] Redfin + Zillow bulk data ingested for the target markets → SQLite star schema
-- [ ] Core investor metrics derived in ETL; remaining metrics specced as DAX in `MEASURES.md`
-- [ ] One reproducible end-to-end run (`make refresh` or `python -m parcel.run`) with a `last_updated` stamp
-- [ ] Committed sample data so the repo runs without network access
-- [ ] README with architecture diagram + run instructions
-- [ ] `MEASURES.md` complete enough that the Power BI report can be assembled without guesswork
+- [x] Redfin ingested for the target markets → SQLite star schema *(Zillow code ready; network-gated)*
+- [x] Core investor metrics derived in ETL; remaining metrics specced as DAX in `MEASURES.md`
+- [x] One reproducible end-to-end run (`make refresh` or `python -m parcel.run`) with a `last_updated` stamp
+- [x] Committed sample data so the repo runs without network access
+- [x] README with architecture diagram + run instructions
+- [x] `MEASURES.md` complete enough that the Power BI report can be assembled without guesswork
 - [ ] Power BI report assembled (by you) covering Views 1–2 + KPI header, Published to web
-- [ ] Portfolio entry copy (challenge / approach / outcome + metric cards) drafted
+- [ ] Portfolio entry copy (challenge / approach / outcome + metric cards) drafted *(can draft now)*
+
+> **Outstanding for full MVP:** (1) rent metrics need the network allowlist to include
+> `files.zillowstatic.com`, then re-run `make refresh`; (2) Power BI assembly is your GUI step.
 
 ---
 
