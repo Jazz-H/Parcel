@@ -90,45 +90,46 @@ Date Range =
 ### 5.2 Core market measures
 Use the **last date in context** so cards/tables show the latest value per region.
 ```DAX
-Latest Date = MAX ( fact_market[date] )
+-- Keep a date scalar in a VAR, then filter by it. Do NOT reference a measure
+-- (e.g. [Latest Date]) inside a CALCULATE boolean filter — DAX rejects it with
+-- "A function 'PLACEHOLDER' has been used in a True/False expression...".
+Latest Date = MAX ( fact_market[date] )   -- fine for display; filters use the VAR below
 
 Median Sale Price =
-CALCULATE ( AVERAGE ( fact_market[median_sale_price] ),
-    fact_market[date] = [Latest Date] )
+VAR d = MAX ( fact_market[date] )
+RETURN CALCULATE ( AVERAGE ( fact_market[median_sale_price] ), fact_market[date] = d )
 
 Days on Market =
-CALCULATE ( AVERAGE ( fact_market[days_on_market] ), fact_market[date] = [Latest Date] )
+VAR d = MAX ( fact_market[date] )
+RETURN CALCULATE ( AVERAGE ( fact_market[days_on_market] ), fact_market[date] = d )
 
 Months of Supply =
-CALCULATE ( AVERAGE ( fact_market[months_of_supply] ), fact_market[date] = [Latest Date] )
+VAR d = MAX ( fact_market[date] )
+RETURN CALCULATE ( AVERAGE ( fact_market[months_of_supply] ), fact_market[date] = d )
 
 Price Cut Share =
-CALCULATE ( AVERAGE ( fact_market[price_cut_share] ), fact_market[date] = [Latest Date] )
+VAR d = MAX ( fact_market[date] )
+RETURN CALCULATE ( AVERAGE ( fact_market[price_cut_share] ), fact_market[date] = d )
 
 List to Sale Ratio =
-CALCULATE ( AVERAGE ( fact_market[list_to_sale_ratio] ), fact_market[date] = [Latest Date] )
+VAR d = MAX ( fact_market[date] )
+RETURN CALCULATE ( AVERAGE ( fact_market[list_to_sale_ratio] ), fact_market[date] = d )
 
 Inventory =
-CALCULATE ( AVERAGE ( fact_market[inventory] ), fact_market[date] = [Latest Date] )
+VAR d = MAX ( fact_market[date] )
+RETURN CALCULATE ( AVERAGE ( fact_market[inventory] ), fact_market[date] = d )
 ```
 For the **trend lines** in View 2 use the columns directly (no `[Latest Date]` filter),
 e.g. `Median Sale Price (trend) = AVERAGE ( fact_market[median_sale_price] )`.
 
 ### 5.3 YoY appreciation
+Self-contained (uses a date VAR, so it needs no marked date table — important here,
+since `dim_date` is monthly and can't be marked):
 ```DAX
-Median Price 12mo Ago =
-CALCULATE (
-    AVERAGE ( fact_market[median_sale_price] ),
-    DATEADD ( dim_date[date], -12, MONTH )
-)
-
 YoY Appreciation =
-VAR Now =
-    CALCULATE ( AVERAGE ( fact_market[median_sale_price] ),
-        fact_market[date] = [Latest Date] )
-VAR Prior =
-    CALCULATE ( AVERAGE ( fact_market[median_sale_price] ),
-        fact_market[date] = EDATE ( [Latest Date], -12 ) )
+VAR d = MAX ( fact_market[date] )
+VAR Now   = CALCULATE ( AVERAGE ( fact_market[median_sale_price] ), fact_market[date] = d )
+VAR Prior = CALCULATE ( AVERAGE ( fact_market[median_sale_price] ), fact_market[date] = EDATE ( d, -12 ) )
 RETURN DIVIDE ( Now - Prior, Prior )
 ```
 
@@ -137,16 +138,23 @@ The ETL already writes `rent_to_price`, `gross_rent_multiplier`, `est_cap_rate`
 (null until Zillow is ingested). Surface them, and add a what-if-driven cap rate /
 cash-on-cash:
 ```DAX
+Median Rent =
+VAR d = MAX ( fact_market[date] )
+RETURN CALCULATE ( AVERAGE ( fact_market[median_rent] ), fact_market[date] = d )
+
 Rent to Price =
-CALCULATE ( AVERAGE ( fact_market[rent_to_price] ), fact_market[date] = [Latest Date] )
+VAR d = MAX ( fact_market[date] )
+RETURN CALCULATE ( AVERAGE ( fact_market[rent_to_price] ), fact_market[date] = d )
 
 Gross Rent Multiplier =
-CALCULATE ( AVERAGE ( fact_market[gross_rent_multiplier] ), fact_market[date] = [Latest Date] )
-
-Median Rent =
-CALCULATE ( AVERAGE ( fact_market[median_rent] ), fact_market[date] = [Latest Date] )
+VAR d = MAX ( fact_market[date] )
+RETURN CALCULATE ( AVERAGE ( fact_market[gross_rent_multiplier] ), fact_market[date] = d )
 
 -- Cap rate recomputed live with the Expense Ratio what-if (overrides ETL default)
+-- NOTE: `[<Parameter> Value]` is the measure the numeric-range parameter auto-generates.
+-- If Power BI can't resolve that name, read the slider directly instead, e.g.
+--   VAR ExpRatio = SELECTEDVALUE ( 'Expense Ratio'[Expense Ratio], 0.45 )
+-- and use ExpRatio in place of [Expense Ratio Value].
 Cap Rate (what-if) =
 VAR AnnualRent = [Median Rent] * 12
 VAR NOI = AnnualRent * ( 1 - [Expense Ratio Value] )
