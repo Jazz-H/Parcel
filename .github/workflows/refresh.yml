@@ -1,0 +1,46 @@
+name: Refresh Parcel data
+
+# Makes "refreshable" real: rebuilds the SQLite DB from source and commits the
+# updated sample + last_updated stamp. GitHub-hosted runners have open network
+# access, so Zillow rent data is fetched here even though the dev environment
+# allowlist blocks it.
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"   # every Monday 12:00 UTC (Redfin updates weekly)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ETL refresh
+        run: python -m parcel.run --force
+
+      - name: Regenerate committed sample
+        run: |
+          cp db/parcel.sqlite data/sample/parcel_sample.sqlite
+          python -c "import sqlite3,pandas as pd; c=sqlite3.connect('db/parcel.sqlite'); \
+          pd.read_sql('select * from fact_market',c).to_csv('data/sample/fact_market.csv',index=False); \
+          pd.read_sql('select * from dim_region',c).to_csv('data/sample/dim_region.csv',index=False)"
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name  "parcel-bot"
+          git config user.email "actions@github.com"
+          git add data/sample/
+          git diff --staged --quiet || git commit -m "chore: scheduled data refresh"
+          git push
