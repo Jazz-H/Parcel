@@ -29,6 +29,9 @@ jobs:
       - name: Format check
         run: black --check .
 
+      - name: Tests
+        run: pytest -q
+
       # The ETL cannot run here — Redfin's public bucket started returning
       # AccessDenied (see README). This at least proves every module imports
       # and the config parses, which is what a syntax or import regression

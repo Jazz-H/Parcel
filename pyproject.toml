@@ -29,3 +29,9 @@ ignore = ["E501"]
 # retry loop in ingest/base.py, the optional-dotenv import in config.py, and
 # the optional-Zillow path in run.py all need to catch anything and carry on.
 # Turning BLE001 on would mean three noqa comments and no new information.
+
+[tool.pytest.ini_options]
+# Parcel is run as a module rather than installed, so the repo root has to be
+# importable for `from parcel... import ...` to resolve in the tests.
+pythonpath = ["."]
+testpaths = ["tests"]

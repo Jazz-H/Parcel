@@ -1,4 +1,4 @@
-.PHONY: install install-dev lint format refresh refresh-force sample clean
+.PHONY: install install-dev lint format test refresh refresh-force sample clean
 
 install:
 	pip install -r requirements.txt
@@ -14,6 +14,9 @@ lint:
 format:
 	ruff check --fix .
 	black .
+
+test:
+	pytest -q
 
 # Full ETL refresh: ingest -> transform -> load -> stamp last_updated.
 refresh:

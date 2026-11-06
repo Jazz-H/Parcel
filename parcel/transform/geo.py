@@ -10,6 +10,18 @@ import pandas as pd
 
 from ..config import Config
 
+# Declared explicitly, and in schema.sql order, so an empty result is still a
+# frame with the right shape. pd.DataFrame([]) yields (0, 0) with no columns at
+# all, and db.load reads dim_region["region_id"], which would then raise a bare
+# KeyError. Unreachable today — redfin.load_raw raises first when no CBSA
+# matches — but it is defensive code that should fail legibly if it ever runs.
+# fmt: off
+DIM_REGION_COLUMNS = [
+    "region_id", "metro", "city", "state",
+    "is_anchor", "population", "median_household_income", "vacancy_rate",
+]
+# fmt: on
+
 
 def build_dim_region(cfg: Config, present_ids: set[str]) -> pd.DataFrame:
     rows = []
@@ -29,4 +41,4 @@ def build_dim_region(cfg: Config, present_ids: set[str]) -> pd.DataFrame:
                 "vacancy_rate": pd.NA,
             }
         )
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=DIM_REGION_COLUMNS)
