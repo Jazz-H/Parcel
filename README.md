@@ -17,7 +17,7 @@ buy-and-hold metros (Raleigh, Atlanta, Nashville, Tampa, Dallas, Columbus, India
 ```mermaid
 flowchart TD
     A[Redfin Data Center<br/>metro market tracker] -->|requests + pandas| C
-    B[Zillow Research<br/>ZHVI + ZORI] -->|requests + pandas| C
+    B[Zillow Research<br/>ZORI rents] -->|requests + pandas| C
     C[Transform<br/>clean · geo-normalize CBSA · derive metrics] --> D[(SQLite star schema)]
     D --> E[Power BI<br/>Power Query + DAX]
     E --> F[Dashboard → Publish to web]
@@ -33,7 +33,7 @@ stretch deal screener. See `parcel/db/schema.sql`.
 | Source | Provides | Status in this build |
 |---|---|---|
 | [Redfin Data Center](https://www.redfin.com/news/data-center/) | sale price, price/sqft, DOM, inventory, months-of-supply, sale-to-list, price-drops | ✅ live |
-| [Zillow Research](https://www.zillow.com/research/data/) (ZHVI/ZORI) | home values + **rents** (rent-to-price, GRM, cap rate) | ⏳ pending network allowlist |
+| [Zillow Research](https://www.zillow.com/research/data/) (ZORI) | **rents** (rent-to-price, GRM, cap rate) | ⏳ pending network allowlist |
 | [Realtor.com Econ Research](https://www.realtor.com/research/data/) | listing-side cross-check | optional |
 | US Census ACS | income / vacancy enrichment | stretch |
 
@@ -62,10 +62,35 @@ and a **KPI header**.
 
 - ✅ Repo scaffold, config, ingest (Redfin + Zillow modules), transform, star schema, loader, one-command refresh
 - ✅ Reproducible price-side database (2012 → present, 8 metros) + committed sample
-- ⏳ Rent metrics (rent-to-price / GRM / cap rate): code is ready; activates once the
-  environment network allowlist includes `files.zillowstatic.com`
+- ✅ Rent metrics (rent-to-price / GRM / cap rate), from Zillow ZORI — populated on
+  1,128 of 1,416 rows; ZORI's history starts later than Redfin's, so earlier months
+  are null by nature rather than by failure
+- ✅ Scheduled GitHub Actions refresh (`.github/workflows/refresh.yml`) — ran weekly
+  from Aug 2026 and committed the regenerated sample each Monday
 - ◻️ Power BI `MEASURES.md` spec + report assembly (next)
-- ◻️ Stretch: GitHub Actions refresh, Census enrichment, deal screener
+- ◻️ Stretch: Census enrichment, deal screener
+
+### Redfin Data Center move, 2 Nov 2026
+
+Redfin rebuilt the Data Center and moved these files from
+`redfin_market_tracker/` to `redfin_data_center/`. The old path now returns
+`AccessDenied`, which is why the scheduled refresh failed on 2 Nov — the new
+file's `Last-Modified` is that same day, so the cutover and the breakage were
+the same event.
+
+Migrated on 2026-11-06. Three things changed with the move: plain CSV instead
+of gzipped TSV, column names that are space-separated and carry their units
+(`MEDIAN SALE PRICE NSA ($)`), and no `PROPERTY_TYPE` column to filter on —
+the metro file is already one row per metro per month. `price_cut_share` moved
+to a sibling price-drops file carrying no `REGION ID`, so it joins on
+`(REGION NAME, PERIOD BEGIN)`.
+
+One conversion worth knowing about: the rebuilt feed publishes
+`list_to_sale_ratio`, `price_cut_share` and `sold_above_list` as **percentages**
+(99.17) where the old tracker gave **fractions** (0.9917). `fact_market`, the
+committed sample and the Power BI measures are all built on fractions, so
+`clean_redfin` divides those three by 100. Mapping them straight through would
+leave the columns 100x out and nothing would have complained.
 
 See [`PLAN.md`](PLAN.md) for the full phased plan and [`docs/data-spike.md`](docs/data-spike.md)
 for the source-field findings.

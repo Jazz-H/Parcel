@@ -1,8 +1,9 @@
 """Create the schema and load frames into SQLite. Idempotent."""
+
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -43,15 +44,19 @@ def load(
         fm.to_sql("fact_market", conn, if_exists="append", index=False)
 
         meta = {
-            "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+            "last_updated": datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
             "regions_tracked": str(dim_region["region_id"].nunique()),
             "date_min": dim_date["date"].min(),
             "date_max": dim_date["date"].max(),
             "data_sources": str(sources),
             "rows_fact_market": str(len(fm)),
         }
-        conn.executemany("INSERT INTO meta(key, value) VALUES (?, ?)", list(meta.items()))
+        conn.executemany(
+            "INSERT INTO meta(key, value) VALUES (?, ?)", list(meta.items())
+        )
         conn.commit()
 
-    print(f"[load] {db_path} — {len(fm):,} fact rows, {len(dim_region)} regions, "
-          f"{len(dim_date)} dates")
+    print(
+        f"[load] {db_path} — {len(fm):,} fact rows, {len(dim_region)} regions, "
+        f"{len(dim_date)} dates"
+    )

@@ -15,12 +15,20 @@ markets:
 
 sources:
   redfin:
-    metro_url: "https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_market_tracker/redfin_metro_market_tracker.tsv000.gz"
-    property_type: "All Residential"
+    # Redfin rebuilt the Data Center and moved these files from
+    # redfin_market_tracker/ to redfin_data_center/ on 2026-11-02 — the same day
+    # the scheduled refresh started failing. The old path now returns
+    # AccessDenied. Plain CSV now, not gzipped TSV, and there is no
+    # PROPERTY_TYPE column to filter on: the metro file is already one row per
+    # metro per month.
+    metro_url: "https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_data_center/housing_market/monthly/all_metros.csv"
+    # price_cut_share lives in a sibling file. It carries no REGION ID, only
+    # REGION NAME, so it is joined on (REGION NAME, PERIOD BEGIN).
+    price_drops_url: "https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_data_center/price_drops/monthly/all_metros.csv"
   zillow:
-    # ZHVI = Zillow Home Value Index (home values); ZORI = Zillow Observed Rent Index (rents).
+    # ZORI = Zillow Observed Rent Index (rents). ZHVI (home values) was fetched here
+    # too until 2026-11-06 — it reached no schema or measure, so it was dropped.
     # Requires the network allowlist to include files.zillowstatic.com.
-    zhvi_metro_url: "https://files.zillowstatic.com/research/public_csvs/zhvi/Metro_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"
     zori_metro_url: "https://files.zillowstatic.com/research/public_csvs/zori/Metro_zori_uc_sfrcondomfr_sm_month.csv"
   realtor:
     metro_url: "https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Core_Metrics_Metro.csv"

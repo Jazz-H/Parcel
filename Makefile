@@ -1,7 +1,22 @@
-.PHONY: install refresh refresh-force sample clean
+.PHONY: install install-dev lint format test refresh refresh-force sample clean
 
 install:
 	pip install -r requirements.txt
+
+install-dev:
+	pip install -r requirements.txt -r requirements-dev.txt
+
+# Lint and formatting, same checks CI runs.
+lint:
+	ruff check .
+	black --check .
+
+format:
+	ruff check --fix .
+	black .
+
+test:
+	pytest -q
 
 # Full ETL refresh: ingest -> transform -> load -> stamp last_updated.
 refresh:

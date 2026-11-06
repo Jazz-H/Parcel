@@ -1,0 +1,5 @@
+# Dev-only tooling. Kept out of requirements.txt so the scheduled refresh
+# workflow installs only what the ETL actually needs.
+ruff>=0.17
+black>=26.10
+pytest>=9.0

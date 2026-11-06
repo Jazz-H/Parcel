@@ -6,6 +6,7 @@ leaves rent-derived columns null. Re-run once the network allowlist includes Zil
 Usage:
     python -m parcel.run [--force] [--no-zillow]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,8 +35,10 @@ def main(force: bool = False, use_zillow: bool = True) -> None:
             zillow = zillow_ingest.load_raw(cfg, force=force)
             sources += 1
         except Exception as err:
-            print(f"[warn] Zillow ingest skipped ({err}). "
-                  f"Building price-side DB; rent metrics will be null.")
+            print(
+                f"[warn] Zillow ingest skipped ({err}). "
+                f"Building price-side DB; rent metrics will be null."
+            )
 
     # --- Transform ---
     expense_ratio = cfg.metrics.get("expense_ratio", 0.45)
@@ -49,7 +52,9 @@ def main(force: bool = False, use_zillow: bool = True) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Parcel ETL refresh")
-    ap.add_argument("--force", action="store_true", help="re-download sources, ignore cache")
+    ap.add_argument(
+        "--force", action="store_true", help="re-download sources, ignore cache"
+    )
     ap.add_argument("--no-zillow", action="store_true", help="skip Zillow rent ingest")
     args = ap.parse_args()
     main(force=args.force, use_zillow=not args.no_zillow)
