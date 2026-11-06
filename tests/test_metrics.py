@@ -79,7 +79,12 @@ def test_expense_ratio_does_not_touch_the_rent_ratios() -> None:
 
 def test_without_zillow_the_rent_metrics_are_null_and_prices_survive() -> None:
     out = build_fact_market(redfin(), None, 0.45)
-    for col in ("median_rent", "rent_to_price", "gross_rent_multiplier", "est_cap_rate"):
+    for col in (
+        "median_rent",
+        "rent_to_price",
+        "gross_rent_multiplier",
+        "est_cap_rate",
+    ):
         assert pd.isna(out[col][0]), col
     assert out["median_sale_price"][0] == PRICE
     assert out["days_on_market"][0] == 31.0
