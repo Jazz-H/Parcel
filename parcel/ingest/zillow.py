@@ -1,4 +1,4 @@
-"""Ingest Zillow Research metro indices: ZHVI (home values) and ZORI (rents).
+"""Ingest Zillow Research ZORI (Zillow Observed Rent Index) for the target metros.
 
 Zillow publishes wide CSVs (one column per month). We filter to the target metros by
 RegionName, melt to long form, and map to our CBSA-based region_id by market name
@@ -46,23 +46,16 @@ def _melt(df: pd.DataFrame, cfg: Config, value_name: str) -> pd.DataFrame:
 
 
 def load_raw(cfg: Config | None = None, *, force: bool = False) -> pd.DataFrame:
-    """Return monthly region_id x date with `zhvi` (home value) and `median_rent` (ZORI)."""
+    """Return monthly region_id x date with `median_rent` (ZORI)."""
     cfg = cfg or load_config()
     z = cfg.sources["zillow"]
     raw = cfg.path("raw_dir")
 
-    zhvi = _melt(
-        _load_wide(z["zhvi_metro_url"], raw / "zillow_zhvi_metro.csv", force=force),
-        cfg,
-        "zhvi",
-    )
-    zori = _melt(
+    df = _melt(
         _load_wide(z["zori_metro_url"], raw / "zillow_zori_metro.csv", force=force),
         cfg,
         "median_rent",
     )
-
-    df = zhvi.merge(zori, on=["region_id", "date"], how="outer")
     print(f"[zillow] {len(df):,} rows for {df['region_id'].nunique()} metros")
     return df
 

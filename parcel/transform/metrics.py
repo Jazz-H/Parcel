@@ -20,8 +20,6 @@ def build_fact_market(
     if zillow is not None and not zillow.empty:
         df = df.merge(zillow, on=["region_id", "date"], how="left")
     else:
-        # zhvi is intentionally not persisted (it is in neither cols nor
-        # schema.sql), so there is nothing to default it to here.
         df["median_rent"] = pd.NA
 
     rent = pd.to_numeric(df.get("median_rent"), errors="coerce")

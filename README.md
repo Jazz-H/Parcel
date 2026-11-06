@@ -17,7 +17,7 @@ buy-and-hold metros (Raleigh, Atlanta, Nashville, Tampa, Dallas, Columbus, India
 ```mermaid
 flowchart TD
     A[Redfin Data Center<br/>metro market tracker] -->|requests + pandas| C
-    B[Zillow Research<br/>ZHVI + ZORI] -->|requests + pandas| C
+    B[Zillow Research<br/>ZORI rents] -->|requests + pandas| C
     C[Transform<br/>clean · geo-normalize CBSA · derive metrics] --> D[(SQLite star schema)]
     D --> E[Power BI<br/>Power Query + DAX]
     E --> F[Dashboard → Publish to web]
@@ -33,7 +33,7 @@ stretch deal screener. See `parcel/db/schema.sql`.
 | Source | Provides | Status in this build |
 |---|---|---|
 | [Redfin Data Center](https://www.redfin.com/news/data-center/) | sale price, price/sqft, DOM, inventory, months-of-supply, sale-to-list, price-drops | ✅ live |
-| [Zillow Research](https://www.zillow.com/research/data/) (ZHVI/ZORI) | home values + **rents** (rent-to-price, GRM, cap rate) | ⏳ pending network allowlist |
+| [Zillow Research](https://www.zillow.com/research/data/) (ZORI) | **rents** (rent-to-price, GRM, cap rate) | ⏳ pending network allowlist |
 | [Realtor.com Econ Research](https://www.realtor.com/research/data/) | listing-side cross-check | optional |
 | US Census ACS | income / vacancy enrichment | stretch |
 

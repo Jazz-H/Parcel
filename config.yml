@@ -18,9 +18,9 @@ sources:
     metro_url: "https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_market_tracker/redfin_metro_market_tracker.tsv000.gz"
     property_type: "All Residential"
   zillow:
-    # ZHVI = Zillow Home Value Index (home values); ZORI = Zillow Observed Rent Index (rents).
+    # ZORI = Zillow Observed Rent Index (rents). ZHVI (home values) was fetched here
+    # too until 2026-11-06 — it reached no schema or measure, so it was dropped.
     # Requires the network allowlist to include files.zillowstatic.com.
-    zhvi_metro_url: "https://files.zillowstatic.com/research/public_csvs/zhvi/Metro_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"
     zori_metro_url: "https://files.zillowstatic.com/research/public_csvs/zori/Metro_zori_uc_sfrcondomfr_sm_month.csv"
   realtor:
     metro_url: "https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Core_Metrics_Metro.csv"

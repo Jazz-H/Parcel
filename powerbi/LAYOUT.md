@@ -43,7 +43,7 @@ Diverging **Market Temperature** scale: min `#2C7FB8` → center `#EDEDED` → m
 | 10 | Ranking detail | **Table** | 612 | 188 | 644 | 496 | Columns in §"Matrix columns" below. Sort `[Market Temperature]` desc. |
 | 11 | State slicer | Slicer (dropdown) | 612 | 150 | 200 | 32 | `dim_region[state]`, horizontal/dropdown. |
 | 12 | Anchor toggle | Slicer | 820 | 150 | 160 | 32 | `dim_region[is_anchor]`, single-select tile. |
-| 13 | Source footnote | Text box | 28 | 690 | 1100 | 24 | "Sources: Redfin Market Tracker, Zillow ZHVI/ZORI · Temp = mean z-score of (−months supply, −price-cut share, list-to-sale)." Slate 8. |
+| 13 | Source footnote | Text box | 28 | 690 | 1100 | 24 | "Sources: Redfin Market Tracker, Zillow ZORI · Temp = mean z-score of (−months supply, −price-cut share, list-to-sale)." Slate 8. |
 
 **Matrix columns (#10), left→right:** Metro · `[Median Sale Price]` · `[YoY Appreciation]`
 · `[Days on Market]` · `[Months of Supply]` · `[Rent to Price]` · `[Cap Rate (what-if)]`
