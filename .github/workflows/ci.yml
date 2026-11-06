@@ -1,0 +1,45 @@
+name: CI
+
+# The refresh workflow runs the ETL weekly, but nothing checked the code
+# itself. This runs on every push and pull request so formatting and lint
+# regressions surface before they reach the scheduled job.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install tooling
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format check
+        run: black --check .
+
+      # The ETL cannot run here — Redfin's public bucket started returning
+      # AccessDenied (see README). This at least proves every module imports
+      # and the config parses, which is what a syntax or import regression
+      # would break.
+      - name: Import check
+        run: |
+          python -c "
+          import parcel.config, parcel.run
+          import parcel.ingest.base, parcel.ingest.redfin, parcel.ingest.zillow
+          import parcel.transform.clean, parcel.transform.geo, parcel.transform.metrics
+          import parcel.db.load
+          cfg = parcel.config.load_config()
+          print(f'ok — {len(cfg.markets)} markets configured')
+          "
