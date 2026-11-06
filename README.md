@@ -62,32 +62,35 @@ and a **KPI header**.
 
 - ✅ Repo scaffold, config, ingest (Redfin + Zillow modules), transform, star schema, loader, one-command refresh
 - ✅ Reproducible price-side database (2012 → present, 8 metros) + committed sample
-- ⏳ Rent metrics (rent-to-price / GRM / cap rate): code is ready; activates once the
-  environment network allowlist includes `files.zillowstatic.com`
+- ✅ Rent metrics (rent-to-price / GRM / cap rate), from Zillow ZORI — populated on
+  1,128 of 1,416 rows; ZORI's history starts later than Redfin's, so earlier months
+  are null by nature rather than by failure
 - ✅ Scheduled GitHub Actions refresh (`.github/workflows/refresh.yml`) — ran weekly
   from Aug 2026 and committed the regenerated sample each Monday
 - ◻️ Power BI `MEASURES.md` spec + report assembly (next)
 - ◻️ Stretch: Census enrichment, deal screener
 
-### ⚠️ Redfin source currently unavailable
+### Redfin Data Center move, 2 Nov 2026
 
-As of **2 Nov 2026** the scheduled refresh fails. Redfin's public S3 bucket returns
-`AccessDenied` to anonymous requests — not just for the metro tracker file but for
-every path including the bucket root:
+Redfin rebuilt the Data Center and moved these files from
+`redfin_market_tracker/` to `redfin_data_center/`. The old path now returns
+`AccessDenied`, which is why the scheduled refresh failed on 2 Nov — the new
+file's `Last-Modified` is that same day, so the cutover and the breakage were
+the same event.
 
-```
-$ curl -sI https://redfin-public-data.s3.us-west-2.amazonaws.com/
-HTTP 403   <Error><Code>AccessDenied</Code>
-```
+Migrated on 2026-11-06. Three things changed with the move: plain CSV instead
+of gzipped TSV, column names that are space-separated and carry their units
+(`MEDIAN SALE PRICE NSA ($)`), and no `PROPERTY_TYPE` column to filter on —
+the metro file is already one row per metro per month. `price_cut_share` moved
+to a sibling price-drops file carrying no `REGION ID`, so it joins on
+`(REGION NAME, PERIOD BEGIN)`.
 
-So this is an upstream access change, not a pipeline bug: the ingest code sets a
-descriptive User-Agent, retries with backoff, and fails fast on a non-429 4xx exactly
-as intended. The weekly runs from 24 Aug through 26 Oct all succeeded against the same
-URL.
-
-Unblocking it needs a new route to the data — Redfin's current published distribution
-method, or an alternative source. Until then the committed sample in `data/sample/`
-remains the reproducible artifact, and `make refresh` will fail on the Redfin step.
+One conversion worth knowing about: the rebuilt feed publishes
+`list_to_sale_ratio`, `price_cut_share` and `sold_above_list` as **percentages**
+(99.17) where the old tracker gave **fractions** (0.9917). `fact_market`, the
+committed sample and the Power BI measures are all built on fractions, so
+`clean_redfin` divides those three by 100. Mapping them straight through would
+leave the columns 100x out and nothing would have complained.
 
 See [`PLAN.md`](PLAN.md) for the full phased plan and [`docs/data-spike.md`](docs/data-spike.md)
 for the source-field findings.
