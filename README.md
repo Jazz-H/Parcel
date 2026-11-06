@@ -64,8 +64,30 @@ and a **KPI header**.
 - ✅ Reproducible price-side database (2012 → present, 8 metros) + committed sample
 - ⏳ Rent metrics (rent-to-price / GRM / cap rate): code is ready; activates once the
   environment network allowlist includes `files.zillowstatic.com`
+- ✅ Scheduled GitHub Actions refresh (`.github/workflows/refresh.yml`) — ran weekly
+  from Aug 2026 and committed the regenerated sample each Monday
 - ◻️ Power BI `MEASURES.md` spec + report assembly (next)
-- ◻️ Stretch: GitHub Actions refresh, Census enrichment, deal screener
+- ◻️ Stretch: Census enrichment, deal screener
+
+### ⚠️ Redfin source currently unavailable
+
+As of **2 Nov 2026** the scheduled refresh fails. Redfin's public S3 bucket returns
+`AccessDenied` to anonymous requests — not just for the metro tracker file but for
+every path including the bucket root:
+
+```
+$ curl -sI https://redfin-public-data.s3.us-west-2.amazonaws.com/
+HTTP 403   <Error><Code>AccessDenied</Code>
+```
+
+So this is an upstream access change, not a pipeline bug: the ingest code sets a
+descriptive User-Agent, retries with backoff, and fails fast on a non-429 4xx exactly
+as intended. The weekly runs from 24 Aug through 26 Oct all succeeded against the same
+URL.
+
+Unblocking it needs a new route to the data — Redfin's current published distribution
+method, or an alternative source. Until then the committed sample in `data/sample/`
+remains the reproducible artifact, and `make refresh` will fail on the Redfin step.
 
 See [`PLAN.md`](PLAN.md) for the full phased plan and [`docs/data-spike.md`](docs/data-spike.md)
 for the source-field findings.
