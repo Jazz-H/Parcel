@@ -1,4 +1,5 @@
 """Shared download helpers: polite, cached, retrying HTTP fetch."""
+
 from __future__ import annotations
 
 import time
@@ -26,7 +27,10 @@ def download(url: str, dest: Path, *, force: bool = False, retries: int = 4) -> 
         try:
             print(f"[fetch] {url}")
             with requests.get(
-                url, headers={"User-Agent": USER_AGENT}, stream=True, timeout=DEFAULT_TIMEOUT
+                url,
+                headers={"User-Agent": USER_AGENT},
+                stream=True,
+                timeout=DEFAULT_TIMEOUT,
             ) as resp:
                 resp.raise_for_status()
                 tmp = dest.with_suffix(dest.suffix + ".part")
@@ -52,4 +56,6 @@ def download(url: str, dest: Path, *, force: bool = False, retries: int = 4) -> 
             print(f"[retry] attempt {attempt + 1} failed: {err} — waiting {wait}s")
             time.sleep(wait)
 
-    raise RuntimeError(f"Failed to download {url} after {retries} attempts") from last_err
+    raise RuntimeError(
+        f"Failed to download {url} after {retries} attempts"
+    ) from last_err

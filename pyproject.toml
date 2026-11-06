@@ -1,0 +1,31 @@
+# Tooling config only — Parcel is run as a module (python -m parcel.run), not
+# installed as a package, so there is no [project] table here.
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes — undefined names, unused imports and variables
+    "W",   # pycodestyle warnings
+    "I",   # import sorting
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # comprehension simplifications
+    "SIM", # simplifications
+    "ERA", # commented-out code
+]
+# E501 is black's job, and it formats to 88 already.
+ignore = ["E501"]
+
+# Deliberately not enabled: BLE001 (blind except) and the TRY rules. The three
+# broad `except Exception` handlers here are intentional and commented — the
+# retry loop in ingest/base.py, the optional-dotenv import in config.py, and
+# the optional-Zillow path in run.py all need to catch anything and carry on.
+# Turning BLE001 on would mean three noqa comments and no new information.

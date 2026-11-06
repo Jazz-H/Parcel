@@ -1,4 +1,5 @@
 """Clean + standardize the raw Redfin frame into tidy fact_market columns."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -19,11 +20,14 @@ REDFIN_MAP = {
     "SOLD_ABOVE_LIST": "sold_above_list",
 }
 
+# Grouped to mirror the schema's logical sections; keep the grouping.
+# fmt: off
 NUMERIC = [
     "median_sale_price", "price_per_sqft", "inventory", "months_of_supply",
     "days_on_market", "list_to_sale_ratio", "price_cut_share",
     "homes_sold", "new_listings", "sold_above_list",
 ]
+# fmt: on
 
 
 def clean_redfin(df: pd.DataFrame) -> pd.DataFrame:
@@ -33,5 +37,7 @@ def clean_redfin(df: pd.DataFrame) -> pd.DataFrame:
     for col in NUMERIC:
         out[col] = pd.to_numeric(out[col], errors="coerce")
     # one row per region x month
-    out = out.drop_duplicates(subset=["region_id", "date"]).sort_values(["region_id", "date"])
+    out = out.drop_duplicates(subset=["region_id", "date"]).sort_values(
+        ["region_id", "date"]
+    )
     return out.reset_index(drop=True)

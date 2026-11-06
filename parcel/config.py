@@ -3,6 +3,7 @@
 Reads config.yml (and .env for optional API keys) and exposes a typed-ish view of
 markets, source URLs, and paths used across the pipeline.
 """
+
 from __future__ import annotations
 
 import os
@@ -52,7 +53,7 @@ class Config:
 
 
 def load_config(path: Path | str = CONFIG_PATH) -> Config:
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
     markets = [Market(**m) for m in raw["markets"]]
     return Config(

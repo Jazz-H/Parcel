@@ -3,6 +3,7 @@
 Downloads the gzipped TSV, filters early to the target CBSAs and the configured
 property type, and returns a tidy raw DataFrame.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -29,6 +30,8 @@ def load_raw(cfg: Config | None = None, *, force: bool = False) -> pd.DataFrame:
     prop_type = cfg.sources["redfin"]["property_type"]
     codes = cfg.cbsa_codes
 
+    # Grouped to mirror the schema's logical sections; keep the grouping.
+    # fmt: off
     usecols = [
         "PERIOD_BEGIN", "REGION", "STATE_CODE", "PROPERTY_TYPE",
         "MEDIAN_SALE_PRICE", "MEDIAN_PPSF", "HOMES_SOLD", "NEW_LISTINGS",
@@ -36,12 +39,17 @@ def load_raw(cfg: Config | None = None, *, force: bool = False) -> pd.DataFrame:
         "PRICE_DROPS", "SOLD_ABOVE_LIST",
         "PARENT_METRO_REGION_METRO_CODE", "LAST_UPDATED",
     ]
+    # fmt: on
 
     frames = []
     reader = pd.read_csv(
-        path, sep="\t", compression="gzip", usecols=usecols,
+        path,
+        sep="\t",
+        compression="gzip",
+        usecols=usecols,
         dtype={"PARENT_METRO_REGION_METRO_CODE": "string"},
-        chunksize=200_000, low_memory=False,
+        chunksize=200_000,
+        low_memory=False,
     )
     for chunk in reader:
         mask = (chunk["PROPERTY_TYPE"] == prop_type) & (
@@ -51,9 +59,13 @@ def load_raw(cfg: Config | None = None, *, force: bool = False) -> pd.DataFrame:
             frames.append(chunk.loc[mask])
 
     if not frames:
-        raise RuntimeError("No Redfin rows matched the target CBSAs — check config.markets.")
+        raise RuntimeError(
+            "No Redfin rows matched the target CBSAs — check config.markets."
+        )
     df = pd.concat(frames, ignore_index=True)
-    print(f"[redfin] {len(df):,} rows for {df['PARENT_METRO_REGION_METRO_CODE'].nunique()} metros")
+    print(
+        f"[redfin] {len(df):,} rows for {df['PARENT_METRO_REGION_METRO_CODE'].nunique()} metros"
+    )
     return df
 
 
